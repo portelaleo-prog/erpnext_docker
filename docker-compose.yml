@@ -35,8 +35,8 @@ services:
       - redis_socketio_data:/data
 
   erpnext:
-     image: frappe/erpnext:v15.15.0
-    command: sleep infinity  # ← mantém o container rodando
+    image: frappe/erpnext:v15.15.0
+    command: sleep infinity
     depends_on:
       mariadb:
         condition: service_healthy
