@@ -51,8 +51,6 @@ services:
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - assets:/home/frappe/frappe-bench/sites/assets
-    ports:
-      - "8000"
 
 volumes:
   mariadb_data:
