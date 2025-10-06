@@ -1,4 +1,4 @@
-# /root/erpnext-prod/docker-compose.yml
+cat > docker-compose.yml << 'EOF'
 version: "3.8"
 
 services:
@@ -59,3 +59,4 @@ volumes:
   redis_socketio_data:
   sites:
   assets:
+EOF
