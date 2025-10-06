@@ -1,4 +1,4 @@
-cat > docker-compose.yml << 'EOF'
+# /etc/dokploy/compose/erp-erpportela-hgcftp/code/docker-compose.yml
 version: "3.8"
 
 services:
@@ -8,7 +8,6 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
-      - --innodb-file-per-table=1
       - --lower-case-table-names=1
     environment:
       MYSQL_ROOT_PASSWORD: Ewqdsacxz2025
@@ -27,12 +26,12 @@ services:
   redis-queue:
     image: redis:6.2
     volumes:
-      - redis_queue_data:/data
+      - redis_queue_/data
 
   redis-socketio:
     image: redis:6.2
     volumes:
-      - redis_socketio_data:/data
+      - redis_socketio_/data
 
   erpnext:
     image: frappe/erpnext:v15.15.0
@@ -53,10 +52,9 @@ services:
       - assets:/home/frappe/frappe-bench/sites/assets
 
 volumes:
-  mariadb_data:
-  redis_cache_data:
-  redis_queue_data:
-  redis_socketio_data:
+  mariadb_
+  redis_cache_
+  redis_queue_
+  redis_socketio_
   sites:
   assets:
-EOF
