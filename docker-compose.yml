@@ -1,0 +1,63 @@
+# docker-compose.yml
+version: "3.8"
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --innodb-file-per-table=1
+      - --lower-case-table-names=1
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis-cache:
+    image: redis:6.2
+    volumes:
+      - redis_cache_data:/data
+
+  redis-queue:
+    image: redis:6.2
+    volumes:
+      - redis_queue_data:/data
+
+  redis-socketio:
+    image: redis:6.2
+    volumes:
+      - redis_socketio_data:/data
+
+  erpnext:
+    image: frappe/erpnext:${ERPNEXT_VERSION:-v15.15.0}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
+      REDIS_SOCKETIO: redis-socketio:6379
+      SITE_NAME: ${SITE_NAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      INSTALL_APPS: erpnext
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/sites/assets
+    ports:
+      - "8000"
+
+volumes:
+  mariadb_data:
+  redis_cache_data:
+  redis_queue_data:
+  redis_socketio_data:
+  sites:
+  assets:
