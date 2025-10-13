@@ -1,90 +1,85 @@
+# ==============================================================================
+# Docker Compose para Frappe/ERPNext - Abordagem Completa e Confiável
+# Baseado no repositório frappe_docker
+# ==============================================================================
 version: "3.8"
 
+volumes:
+  sites:
+  assets:
+  db-data:
+
+networks:
+  dokploy-network:
+    external: true
+  default:
+    driver: bridge
+
 services:
-  mariadb:
-    image: mariadb:10.6
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --skip-character-set-client-handshake
-      - --innodb-file-per-table=1
-      - --lower-case-table-names=1
-      - --bind-address=0.0.0.0
+  # O serviço principal do Frappe, que tem todos os comandos
+  frappe:
+    image: frappe/bench:latest
+    restart: on-failure
+    command: ["sleep", "infinity"] # Apenas mantém o contêiner rodando
     environment:
-      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MARIADB_ROOT_PASSWORD}"]
-      timeout: 20s
-      retries: 10
-    restart: unless-stopped
-    networks:
-      - erpnext-network
-
-  redis-cache:
-    image: redis:6.2-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_cache_data:/data
-    restart: unless-stopped
-    networks:
-      - erpnext-network
-
-  redis-queue:
-    image: redis:6.2-alpine  
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_queue_data:/data
-    restart: unless-stopped
-    networks:
-      - erpnext-network
-
-  redis-socketio:
-    image: redis:6.2-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_socketio_data:/data
-    restart: unless-stopped
-    networks:
-      - erpnext-network
-
-  erpnext:
-    image: frappe/erpnext:v14.32.1
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis-cache:
-        condition: service_started
-      redis-queue:
-        condition: service_started  
-      redis-socketio:
-        condition: service_started
-    environment:
-      MARIADB_HOST: mariadb
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      REDIS_CACHE: redis-cache:6379
-      REDIS_QUEUE: redis-queue:6379
-      REDIS_SOCKETIO: redis-socketio:6379
-      SITE_NAME: ${SITE_NAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_CACHE=redis-cache:6379
+      - REDIS_QUEUE=redis-queue:6379
+      - DB_ROOT_PASSWORD=SUA_SENHA_SECRETA_ROOT # Use a mesma do serviço 'db'
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - assets:/home/frappe/frappe-bench/sites/assets
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
     networks:
-      - erpnext-network
+      - default
 
-volumes:
-  mariadb_data:
-  redis_cache_data:
-  redis_queue_data:
-  redis_socketio_data:
-  sites:
-  assets:
+  # O proxy Nginx que direciona o tráfego
+  frontend:
+    image: frappe/frappe-nginx:latest
+    restart: on-failure
+    expose:
+      - 80
+    environment:
+      - BACKEND=frappe:8000
+      - SOCKETIO=frappe:9000
+      - UPSTREAM_REAL_IP_ADDRESS=172.18.0.0/16
+      - UPSTREAM_REAL_IP_RECURSIVE=on
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/sites/assets
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frappe-multisite.rule=Host(`erp.portela.top` ) || Host(`crm.portela.top`)"
+      - "traefik.http.routers.frappe-multisite.entrypoints=websecure"
+      - "traefik.http.routers.frappe-multisite.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frappe-multisite.loadbalancer.server.port=80"
+    networks:
+      - dokploy-network
+      - default
 
-networks:
-  erpnext-network:
-    driver: bridge
+  # Banco de dados
+  db:
+    image: mariadb:10.6
+    restart: on-failure
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: 'Ewqdsacxz@2025' # Use a mesma do serviço 'frappe'
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - default
+
+  # Redis
+  redis-queue:
+    image: redis:6.2-alpine
+    restart: on-failure
+    networks:
+      - default
+
+  redis-cache:
+    image: redis:6.2-alpine
+    restart: on-failure
+    networks:
+      - default
