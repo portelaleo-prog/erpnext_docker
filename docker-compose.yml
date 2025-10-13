@@ -26,7 +26,7 @@ services:
       - DB_PORT=3306
       - REDIS_CACHE=redis-cache:6379
       - REDIS_QUEUE=redis-queue:6379
-      - DB_ROOT_PASSWORD=SUA_SENHA_SECRETA_ROOT # Use a mesma do serviço 'db'
+      - DB_ROOT_PASSWORD=Ewqdsacxz@2025 # Use a mesma do serviço 'db'
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - assets:/home/frappe/frappe-bench/sites/assets
